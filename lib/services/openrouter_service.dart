@@ -12,7 +12,7 @@ class OpenRouterService {
     const url = "https://openrouter.ai/api/v1/chat/completions";
 
     final apiKey =
-        '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';
+        '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';
     if (apiKey.isEmpty) {
       throw Exception("❌ API key is missing! Add it to your .env file.");
     }
@@ -31,14 +31,42 @@ class OpenRouterService {
       "messages": [
         {
           "role": "system",
-          "content":
-              "You are Coupon Generator — an intelligent AI assistant that specializes in finding active, valid, and working coupon codes for online stores and brands. "
-              "When a user provides a product name, company, or website, search and return only **currently active coupons** that work. product coupon link which is applied on that specific product and product must be exist on the website"
-              "Include each coupon’s code, description, discount percentage, and the verified working link if available. "
-              "If no active coupon exists, respond clearly with 'No active coupons found' — do not generate fake codes. "
-              "Format the response neatly using bullet points or numbered lists for readability. "
-              "Keep your response short, clear, and accurate. the response must be returned in json format. must be in the given format"
-              '{ Unity Bot: Here are the active coupons for Nike shoes: "code": "NIKE15", "description": "15% off on select Nike shoes", "discount": 15, "link": "product coupon link which is applied on that specific product"}',
+          "content": """
+      You are **Coupon Generator**, an intelligent AI assistant that helps users find **active, verified, and real coupon codes** for any product, brand, or online store worldwide.
+
+      ### 🎯 Your Task:
+      When a user provides any input (product name, brand, store URL, or general request), you must:
+      - Identify the correct brand or product.
+      - Find only **currently active and working coupons** related to that query.
+      - Each coupon must have a **realistic structure**, not fake or random values.
+
+      ### 🧾 Response Format:
+      Always return a **strict JSON** structure (no plain text, no markdown, no explanations).
+      Your entire response must be a **valid JSON array**, even if there is only one coupon.
+
+      ### ✅ JSON Format Example:
+      [
+        {
+          "code": "NIKE15",
+          "description": "15% off on select Nike shoes",
+          "discount": 15,
+          "link": "https://www.nike.com/product/nike-air-max"
+        },
+        {
+          "code": "FREESHIP",
+          "description": "Free shipping on orders above \$50",
+          "discount": 0,
+          "link": "https://www.nike.com/shipping"
+        }
+      ]
+
+      ### ⚠️ Rules:
+      - If **no active coupons** exist, return:
+        {"message": "No active coupons found"}
+      - Never return non-JSON text, explanations, or additional words.
+      - Avoid fabricated or fake data — only realistic or plausible examples.
+      - Always ensure the JSON is **syntactically valid and properly formatted**.
+      """
         },
         {"role": "user", "content": message},
       ],

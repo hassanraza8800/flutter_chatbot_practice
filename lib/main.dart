@@ -144,23 +144,33 @@ class _HomePageState extends State<HomePage> {
 
     File imgFile = File(picked.path);
 
-    // ✅ Await compression properly
+    // ✅ Compress image properly
     imgFile = await _compressImage(imgFile);
 
     try {
-      // ✅ Await result safely
+      setState(() => _isLoading = true);
+
+      // ✅ Analyze the image
       final result = await _visionService.analyzeImage(imgFile);
 
-      if (!context.mounted) return;
+      // ✅ Add user's image message
+      setState(() {
+        _message.add({'sender': 'user', 'text': '$result  (📸)'});
+      });
 
-      // ✅ Use mounted check and await showDialog
-      await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Your Result'),
-          content: Text(result ?? 'No response received'),
-        ),
-      );
+      // ✅ Show "typing..." indicator
+      setState(() {
+        _message.add({"sender": "bot", "text": "🤖 Unity Bot is typing..."});
+      });
+
+      // ✅ Await the bot reply (fixes "Instance of Future<String>")
+      final botReply = await _openRouterService.sendMessage(result);
+
+      // ✅ Replace typing message with real bot reply
+      setState(() {
+        _message.removeLast();
+        _message.add({"sender": "bot", "text": "🤖 Unity Bot: $botReply"});
+      });
     } catch (e) {
       if (!context.mounted) return;
       await showDialog(
@@ -170,6 +180,9 @@ class _HomePageState extends State<HomePage> {
           content: Text('Failed to analyze image: $e'),
         ),
       );
+    } finally {
+      setState(() => _isLoading = false);
+      _scrollToBottom();
     }
   }
 
@@ -246,7 +259,7 @@ class _HomePageState extends State<HomePage> {
             icon: Image.asset('assets/ToggleMenu.png', height: 32),
             offset: const Offset(0, 52),
             onSelected: (value) {
-              if (value == 'Coupen Generator') {
+              if (value == 'Profile') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const ProfilePage()),
@@ -265,8 +278,8 @@ class _HomePageState extends State<HomePage> {
             },
             itemBuilder: (BuildContext context) => const [
               PopupMenuItem(
-                value: 'Coupen Generator',
-                child: Text('Coupen Generator'),
+                value: 'Profile',
+                child: Text('Profile'),
               ),
               PopupMenuItem(value: 'Settings', child: Text('Settings')),
               PopupMenuItem(value: 'Logout', child: Text('Logout')),
@@ -341,16 +354,18 @@ class _HomePageState extends State<HomePage> {
                 }
 
                 // 🤖 Bot message - check for coupon JSON
-                List<dynamic>? coupons;
+                List<Map<String, dynamic>>? coupons;
                 try {
-                  final text = msg['text']!;
-                  final jsonStart = text.indexOf('[');
-                  final jsonEnd = text.lastIndexOf(']');
-                  if (jsonStart != -1 && jsonEnd != -1) {
-                    final jsonString = text.substring(jsonStart, jsonEnd + 1);
-                    coupons = List<Map<String, dynamic>>.from(
-                      jsonDecode(jsonString),
-                    );
+                  final text =
+                      msg['text']!.replaceFirst('🤖 Unity Bot:', '').trim();
+
+                  // Check if it's a JSON array or single object
+                  if (text.startsWith('[') && text.endsWith(']')) {
+                    coupons = List<Map<String, dynamic>>.from(jsonDecode(text));
+                  } else if (text.startsWith('{') && text.endsWith('}')) {
+                    final singleCoupon =
+                        Map<String, dynamic>.from(jsonDecode(text));
+                    coupons = [singleCoupon]; // wrap single coupon into a list
                   }
                 } catch (e) {
                   coupons = null;

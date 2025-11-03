@@ -10,7 +10,7 @@ class OpenRouterVisionService {
   Future<String> analyzeImage(File imageFile) async {
     const endpoint = "https://openrouter.ai/api/v1/chat/completions";
     const apiKey =
-        "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";
+        "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";
 
     if (!await imageFile.exists()) {
       return "⚠️ Image file not found.";
